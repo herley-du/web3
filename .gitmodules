@@ -7,3 +7,6 @@
 [submodule "libs/openzeppelin-contracts"]
 	path = libs/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "web3"]
+    path = web3
+    url = https://github.com/herley-du/web3.git
