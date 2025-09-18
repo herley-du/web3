@@ -1,27 +1,79 @@
-name: CI
+name: CI - Foundry (tests, fmt, gas, coverage)
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "main" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "main" ]
 
 jobs:
-  test:
+  foundry:
     runs-on: ubuntu-latest
+    env:
+      RUSTUP_HOME: ${{ runner.temp }}/rustup
+      CARGO_HOME: ${{ runner.temp }}/cargo
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
-      - name: Install Foundry
+      - name: Set up Foundry (forge, anvil, cast)
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: latest
+
+      - name: Show foundry version
+        run: |
+          foundryup --version || true
+          forge --version || true
+          cast --version || true
+          anvil --version || true
+
+      - name: Cache libs and foundry cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.foundry
+            libs
+            lib
+            ~/.cache/foundry
+          key: ${{ runner.os }}-foundry-${{ hashFiles('**/foundry.toml', '**/remappings.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-foundry-
 
       - name: Install dependencies
-        run: forge install
+        run: forge install --no-commit
 
-      - name: Run tests
-        run: forge test -vv
+      - name: Check formatting (forge fmt)
+        run: |
+          forge fmt --check
 
+      - name: Build
+        run: forge build
+
+      - name: Run tests (with gas report)
+        run: |
+          forge test -vv --gas-report | tee gas-report.txt
+
+      - name: Upload gas report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gas-report
+          path: gas-report.txt
+
+      - name: Run coverage (forge coverage)
+        run: |
+          forge coverage -vv
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          forge coverage -vv            
+- name :Upload coverage artifact
+ uses: actions/upload-artifact@v4
+ with:
+ name :coverage
+ path :coverage
