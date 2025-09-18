@@ -1,18 +1,27 @@
 name: CI
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Foundry
-        run: |
-          curl -L https://foundry.paradigm.xyz | bash
-          source ~/.bashrc || true
-          foundryup || true
-      - name: Install deps
-        run: |
-          forge install || true
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install dependencies
+        run: forge install
+
       - name: Run tests
-        run: |
-          forge test -vv
+        run: forge test -vv
+
