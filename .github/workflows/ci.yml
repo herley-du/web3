@@ -16,49 +16,37 @@ jobs:
         with:
           submodules: true
 
-      - name: Install Foundry (robust)
+      - name: Install Foundry (source and run)
         run: |
           set -euxo pipefail
-
-          echo "=== start install foundryup ==="
-
-          # download official installer to temp file and run it
           curl -fsSL https://foundry.paradigm.xyz -o /tmp/foundryup.sh
           chmod +x /tmp/foundryup.sh
+          /tmp/foundryup.sh || true
 
-          # run installer (it installs to $HOME/.foundry by default)
-          /tmp/foundryup.sh || { echo "foundryup script failed"; ls -al /tmp; cat /tmp/foundryup.sh; exit 127; }
-
-          # Ensure the foundry bin is in PATH for the current shell immediately
-          export PATH="$HOME/.foundry/bin:$PATH"
-          # Also add to GITHUB_PATH so later steps see it
-          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
-
-          # Ensure the toolchain is installed (non-interactive)
-          # Try calling directly the binary under ~/.foundry/bin
-          if [ -x "$HOME/.foundry/bin/foundryup" ]; then
-            $HOME/.foundry/bin/foundryup -y
-          else
-            echo "No foundryup binary at $HOME/.foundry/bin/foundryup"
-            ls -al "$HOME/.foundry" || true
-            exit 127
+          # Source bashrc in case installer wrote env there
+          if [ -f "$HOME/.bashrc" ]; then
+            source "$HOME/.bashrc"
           fi
 
-          # debug: list files, print versions
-          echo "--- ls ~/.foundry/bin ---"
-          ls -la "$HOME/.foundry/bin" || true
+          # Add foundry bin to PATH for current step and future steps
+          export PATH="$HOME/.foundry/bin:$PATH"
+          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
 
-          echo "--- which forge/cast/anvil (from current PATH) ---"
-          which forge || true
-          which cast || true
-          which anvil || true
+          # Now run foundryup to install toolchain non-interactively
+          if command -v foundryup >/dev/null 2>&1; then
+            foundryup -y
+          elif [ -x "$HOME/.foundry/bin/foundryup" ]; then
+            "$HOME/.foundry/bin/foundryup" -y
+          else
+            echo "foundryup not found after sourcing; listing home:"
+            ls -al "$HOME"
+            exit 1
+          fi
 
-          echo "--- versions ---"
+          # debug
+          ls -la "$HOME/.foundry" || true
           forge --version || true
-          cast --version || true
-          anvil --version || true
 
-          echo "=== finished install foundryup ==="
 
 
 
