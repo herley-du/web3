@@ -18,20 +18,20 @@ jobs:
 
       - name: Install Foundry (foundryup)
         run: |
-          # install foundryup (official script)
+          
           curl -L https://foundry.paradigm.xyz | bash
 
-          # add foundry bin dir to PATH for the rest of this job
+          
           echo "$HOME/.foundry/bin" >> $GITHUB_PATH
 
-          # install toolchain non-interactively and ensure binaries available
-          foundryup -y
+          
+          $HOME/.foundry/bin/foundryup -y
 
-          # show versions for debug
-          foundryup --version || true
-          forge --version || true
-          cast --version || true
-          anvil --version || true
+          
+          $HOME/.foundry/bin/forge --version || true
+          $HOME/.foundry/bin/cast --version || true
+          $HOME/.foundry/bin/anvil --version || true
+
 
       - name: Cache libs and foundry cache
         uses: actions/cache@v4
