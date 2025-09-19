@@ -16,21 +16,50 @@ jobs:
         with:
           submodules: true
 
-      - name: Install Foundry (foundryup)
+      - name: Install Foundry (robust)
         run: |
-          
-          curl -L https://foundry.paradigm.xyz | bash
+          set -euxo pipefail
 
-          
+          echo "=== start install foundryup ==="
+
+          # download official installer to temp file and run it
+          curl -fsSL https://foundry.paradigm.xyz -o /tmp/foundryup.sh
+          chmod +x /tmp/foundryup.sh
+
+          # run installer (it installs to $HOME/.foundry by default)
+          /tmp/foundryup.sh || { echo "foundryup script failed"; ls -al /tmp; cat /tmp/foundryup.sh; exit 127; }
+
+          # Ensure the foundry bin is in PATH for the current shell immediately
+          export PATH="$HOME/.foundry/bin:$PATH"
+          # Also add to GITHUB_PATH so later steps see it
           echo "$HOME/.foundry/bin" >> $GITHUB_PATH
 
-          
-          $HOME/.foundry/bin/foundryup -y
+          # Ensure the toolchain is installed (non-interactive)
+          # Try calling directly the binary under ~/.foundry/bin
+          if [ -x "$HOME/.foundry/bin/foundryup" ]; then
+            $HOME/.foundry/bin/foundryup -y
+          else
+            echo "No foundryup binary at $HOME/.foundry/bin/foundryup"
+            ls -al "$HOME/.foundry" || true
+            exit 127
+          fi
 
-          
-          $HOME/.foundry/bin/forge --version || true
-          $HOME/.foundry/bin/cast --version || true
-          $HOME/.foundry/bin/anvil --version || true
+          # debug: list files, print versions
+          echo "--- ls ~/.foundry/bin ---"
+          ls -la "$HOME/.foundry/bin" || true
+
+          echo "--- which forge/cast/anvil (from current PATH) ---"
+          which forge || true
+          which cast || true
+          which anvil || true
+
+          echo "--- versions ---"
+          forge --version || true
+          cast --version || true
+          anvil --version || true
+
+          echo "=== finished install foundryup ==="
+
 
 
       - name: Cache libs and foundry cache
