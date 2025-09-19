@@ -1,4 +1,4 @@
-name: CI - Foundry (fmt, build, tests, gas)
+name: CI - Foundry (fmt, build, tests, gas, coverage)
 
 on:
   push:
@@ -18,14 +18,32 @@ jobs:
 
       - name: Install Foundry (foundryup)
         run: |
+          # install foundryup (official script)
           curl -L https://foundry.paradigm.xyz | bash
-          # add foundry to PATH for this session
+
+          # add foundry bin dir to PATH for the rest of this job
           echo "$HOME/.foundry/bin" >> $GITHUB_PATH
-          # show versions
+
+          # install toolchain non-interactively and ensure binaries available
+          foundryup -y
+
+          # show versions for debug
           foundryup --version || true
           forge --version || true
           cast --version || true
           anvil --version || true
+
+      - name: Cache libs and foundry cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.foundry
+            libs
+            lib
+            ~/.cache/foundry
+          key: ${{ runner.os }}-foundry-${{ hashFiles('**/foundry.toml', '**/remappings.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-foundry-
 
       - name: Install dependencies
         run: forge install --no-commit
@@ -45,3 +63,18 @@ jobs:
         with:
           name: gas-report
           path: gas-report.txt
+
+      - name: Install system deps for coverage
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lcov
+
+      - name: Run coverage
+        run: |
+          forge coverage -vv
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
