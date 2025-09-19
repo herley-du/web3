@@ -1,4 +1,4 @@
-name: CI - Foundry (tests, fmt, gas, coverage)
+name: CI - Foundry (fmt, build, tests, gas, coverage)
 
 on:
   push:
@@ -47,8 +47,7 @@ jobs:
         run: forge install --no-commit
 
       - name: Check formatting (forge fmt)
-        run: |
-          forge fmt --check
+        run: forge fmt --check
 
       - name: Build
         run: forge build
@@ -63,7 +62,12 @@ jobs:
           name: gas-report
           path: gas-report.txt
 
-      - name: Run coverage (forge coverage)
+      - name: Install system deps for coverage
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lcov
+
+      - name: Run coverage
         run: |
           forge coverage -vv
 
@@ -71,9 +75,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage
-          forge coverage -vv            
-- name :Upload coverage artifact
- uses: actions/upload-artifact@v4
- with:
- name :coverage
- path :coverage
+          path: coverage
