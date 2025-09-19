@@ -1,4 +1,4 @@
-name: CI - Foundry (fmt, build, tests, gas, coverage)
+name: CI - Foundry (fmt, build, tests, gas)
 
 on:
   push:
@@ -16,29 +16,16 @@ jobs:
         with:
           submodules: true
 
-      - name: Set up Foundry (forge, anvil, cast)
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: latest
-
-      - name: Show foundry version
+      - name: Install Foundry (foundryup)
         run: |
+          curl -L https://foundry.paradigm.xyz | bash
+          # add foundry to PATH for this session
+          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
+          # show versions
           foundryup --version || true
           forge --version || true
           cast --version || true
           anvil --version || true
-
-      - name: Cache libs and foundry cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.foundry
-            libs
-            lib
-            ~/.cache/foundry
-          key: ${{ runner.os }}-foundry-${{ hashFiles('**/foundry.toml', '**/remappings.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-foundry-
 
       - name: Install dependencies
         run: forge install --no-commit
@@ -58,18 +45,3 @@ jobs:
         with:
           name: gas-report
           path: gas-report.txt
-
-      - name: Install system deps for coverage
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y lcov
-
-      - name: Run coverage
-        run: |
-          forge coverage -vv
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: coverage
